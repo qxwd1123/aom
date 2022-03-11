@@ -434,7 +434,7 @@ if(CONFIG_AV1_DECODER AND ENABLE_EXAMPLES)
       append_link_flag_to_target("inspect" "-s MODULARIZE=1")
       append_link_flag_to_target("inspect" "-s ALLOW_MEMORY_GROWTH=1")
       append_link_flag_to_target(
-        "inspect" "-s \'EXTRA_EXPORTED_RUNTIME_METHODS=[\"UTF8ToString\"]\'")
+        "inspect" "-s \'EXPORTED_RUNTIME_METHODS=[\"FS\", \"UTF8ToString\"]\'")
       append_link_flag_to_target("inspect"
                                  "-s EXPORT_NAME=\"\'DecoderModule\'\"")
       append_link_flag_to_target("inspect" "--memory-init-file 0")

@@ -313,7 +313,7 @@ if(MSVC)
     add_compiler_flag_if_supported("/WX")
   endif()
 else()
-  require_c_flag("-std=c99" YES)
+require_c_flag("-std=gnu99" YES)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
      AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU"
      AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
