@@ -147,8 +147,6 @@ aomdec_av1_webm() {
 }
 
 aomdec_tests="aomdec_av1_ivf
-              aomdec_av1_ivf_multithread
-              aomdec_av1_ivf_multithread_row_mt
               aomdec_aom_ivf_pipe_input"
 
 if [ ! "$(realtime_only_build)" = "yes" ]; then
