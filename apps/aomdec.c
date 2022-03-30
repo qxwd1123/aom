@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <limits.h>
-
+#include <assert.h>
 #include "config/aom_config.h"
 
 #if CONFIG_OS_SUPPORT
@@ -478,6 +478,7 @@ static int main_loop(int argc, const char **argv_) {
   int num_external_frame_buffers = 0;
   struct ExternalFrameBufferList ext_fb_list = { 0, NULL };
 
+  char *out_fn = NULL;
   const char *outfile_pattern = NULL;
   char outfile_name[PATH_MAX] = { 0 };
   FILE *outfile = NULL;
@@ -610,6 +611,8 @@ static int main_loop(int argc, const char **argv_) {
     free(argv);
     fprintf(stderr, "No input file specified!\n");
     usage_exit();
+  } else {
+    fprintf(stdout, "input file: %s\n", fn);
   }
 
   const bool using_file = strcmp(fn, "-") != 0;
@@ -622,11 +625,23 @@ static int main_loop(int argc, const char **argv_) {
 #if CONFIG_OS_SUPPORT
   /* Make sure we don't dump to the terminal, unless forced to with -o - */
   if (!outfile_pattern && isatty(STDOUT_FILENO) && !do_md5 && !noblit) {
-    fprintf(stderr,
-            "Not dumping raw video to your terminal. Use '-o -' to "
-            "override.\n");
-    free(argv);
-    return EXIT_FAILURE;
+    // fprintf(stderr,
+    //         "Not dumping raw video to your terminal. Use '-o -' to "
+    //         "override.\n");
+    // free(argv);
+    // return EXIT_FAILURE;
+    char *pfnc = fn;
+    for (char *pCur = fn; *pCur != '\0'; pCur++) {
+      if (*pCur == '/') pfnc = pCur + 1;
+    }
+    char cwd[PATH_MAX] = { 0 };
+    assert(getcwd(cwd, sizeof(cwd)) != NULL);
+    out_fn = calloc(strlen(pfnc) + strlen(cwd) + 5 + 4 + 1, sizeof(char));
+    strcat(out_fn, cwd);
+    strcat(out_fn, "/out/");
+    strcat(out_fn, pfnc);
+    strcat(out_fn, ".y4m");
+    outfile_pattern = out_fn;
   }
 #endif
   input.aom_input_ctx->filename = fn;
@@ -1056,6 +1071,8 @@ fail2:
   if (framestats_file) fclose(framestats_file);
 
   free(argv);
+
+  if (out_fn != NULL) free(out_fn);
 
   return ret;
 }
