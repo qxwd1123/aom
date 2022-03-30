@@ -207,16 +207,15 @@ void av1_alloc_cdef_buffers(AV1_COMMON *const cm,
     // Calculate src buffer size
     new_srcbuf_size = sizeof(*cdef_info->srcbuf) * CDEF_INBUF_SIZE;
     for (int plane = 0; plane < num_planes; plane++) {
-      const int shift =
-          plane == AOM_PLANE_Y ? 0 : cm->seq_params->subsampling_x;
+      int shift = plane == AOM_PLANE_Y ? 0 : cm->seq_params->subsampling_x;
       // Calculate top and bottom line buffer size
       const int luma_stride =
           ALIGN_POWER_OF_TWO(cm->mi_params.mi_cols << MI_SIZE_LOG2, 4);
-      new_linebuf_size[plane] = sizeof(*cdef_info->linebuf) * num_bufs *
-                                (CDEF_VBORDER << 1) * (luma_stride >> shift);
+      new_linebuf_size[plane] = sizeof(*cdef_info->linebuf[plane]) * num_bufs *
+                                CDEF_VBORDER * (luma_stride >> shift);
       // Calculate column buffer size
-      const int block_height =
-          (CDEF_BLOCKSIZE << (MI_SIZE_LOG2 - shift)) * 2 * CDEF_VBORDER;
+      shift = plane == AOM_PLANE_Y ? 0 : cm->seq_params->subsampling_y;
+      const int block_height = (CDEF_BLOCKSIZE >> shift) + 2 * CDEF_VBORDER;
       new_colbuf_size[plane] =
           sizeof(*cdef_info->colbuf[plane]) * block_height * CDEF_HBORDER;
     }

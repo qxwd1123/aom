@@ -16,7 +16,7 @@
 
 #define CDEF_BLOCKSIZE 64
 #define CDEF_BLOCKSIZE_LOG2 6
-#define CDEF_NBLOCKS ((1 << MAX_SB_SIZE_LOG2) / 8)
+#define CDEF_NBLOCKS ((1 << CDEF_BLOCKSIZE_LOG2) / 8)
 #define CDEF_SB_SHIFT (MAX_SB_SIZE_LOG2 - CDEF_BLOCKSIZE_LOG2)
 
 /* We need to buffer two vertical lines. */
@@ -25,11 +25,11 @@
    16 bytes (8 x 16 bits) to make vectorization easier. */
 #define CDEF_HBORDER (8)
 #define CDEF_BSTRIDE \
-  ALIGN_POWER_OF_TWO((1 << MAX_SB_SIZE_LOG2) + 2 * CDEF_HBORDER, 3)
+  ALIGN_POWER_OF_TWO((1 << CDEF_BLOCKSIZE_LOG2) + 2 * CDEF_HBORDER, 3)
 
 #define CDEF_VERY_LARGE (30000)
 #define CDEF_INBUF_SIZE \
-  (CDEF_BSTRIDE * ((1 << MAX_SB_SIZE_LOG2) + 2 * CDEF_VBORDER))
+  (CDEF_BSTRIDE * ((1 << CDEF_BLOCKSIZE_LOG2) + 2 * CDEF_VBORDER))
 
 extern const int cdef_pri_taps[2][2];
 extern const int cdef_sec_taps[2];
