@@ -196,8 +196,6 @@ aomdec_av1_monochrome_yuv_10bit() {
 }
 
 aomdec_tests="aomdec_av1_ivf
-              aomdec_av1_ivf_multithread
-              aomdec_av1_ivf_multithread_row_mt
               aomdec_aom_ivf_pipe_input
               aomdec_av1_monochrome_yuv_8bit"
 
