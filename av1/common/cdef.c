@@ -417,6 +417,7 @@ void av1_cdef_fb_row(const AV1_COMMON *const cm, MACROBLOCKD *xd,
 void av1_cdef_frame(YV12_BUFFER_CONFIG *frame, AV1_COMMON *const cm,
                     MACROBLOCKD *xd, cdef_init_fb_row_t cdef_init_fb_row_fn) {
   const int num_planes = av1_num_planes(cm);
+  // number of vertical filter blocks in unit of 64 pixels
   const int nvfb = (cm->mi_params.mi_rows + MI_SIZE_64X64 - 1) / MI_SIZE_64X64;
 
   av1_setup_dst_planes(xd->plane, cm->seq_params->sb_size, frame, 0, 0, 0,

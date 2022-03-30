@@ -760,6 +760,7 @@ static int main_loop(int argc, const char **argv_) {
 
     frame_avail = 0;
     if (!stop_after || frame_in < stop_after) {
+      // allocate buffer with size of two frame and read one frame to buffer
       if (!read_frame(&input, &buf, &bytes_in_buffer, &buffer_size)) {
         frame_avail = 1;
         frame_in++;
