@@ -1,0 +1,83 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Config",
+            "description": "Default build",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/cmbuild",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CONFIG_AV1_ENCODER": "0",
+                "CONFIG_AV1_DECODER": "1",
+                "CONFIG_MULTITHREAD": "0",
+                "AOM_TARGET_CPU": "generic",
+                "ENABLE_CCACHE": "1",
+                "SANITIZE": "address,undefined",
+                "ENABLE_DOCS": "0"
+            },
+            "warnings": {
+                "dev": true,
+                "deprecated": true
+            },
+            "errors": {
+                "dev": true,
+                "deprecated": true
+            }
+        },
+        {
+            "name": "inspect",
+            "displayName": "inspect Config",
+            "description": "inspect build",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/cmbuild-inspect",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CONFIG_AV1_ENCODER": "1",
+                "CONFIG_AV1_DECODER": "1",
+                "CONFIG_MULTITHREAD": "0",
+                "AOM_TARGET_CPU": "generic",
+                "ENABLE_CCACHE": "1",
+                "SANITIZE": "address,undefined",
+                "CONFIG_ACCOUNTING": "1",
+                "CONFIG_INSPECTION": "1",
+                "CONFIG_RUNTIME_CPU_DETECT": "0",
+                "CONFIG_WEBM_IO": "0",
+                "ENABLE_DOCS": "0",
+                "CMAKE_TOOLCHAIN_FILE": "/home/a/ws/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+            },
+            "warnings": {
+                "dev": true,
+                "deprecated": true
+            },
+            "errors": {
+                "dev": true,
+                "deprecated": true
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        },
+        {
+            "name": "inspect",
+            "configurePreset": "inspect"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
+    ]
+}

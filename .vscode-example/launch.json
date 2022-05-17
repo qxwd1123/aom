@@ -1,0 +1,41 @@
+{
+    "version": "0.0.0",
+    "configurations": [
+        {
+            "name": "debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cmbuild/aomdec",
+            "args": [
+                "${workspaceFolder}/test_data/av1-1-b8-22-svc-L2T1.ivf"
+            ],
+            "stopAtEntry": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LSAN_OPTIONS",
+                    "value": "verbosity=1:log_threads=1:abort_on_error=1:sleep_before_dying=3"
+                },
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "verbosity=1:log_threads=1:abort_on_error=1:sleep_before_dying=3"
+                },
+                {
+                    "name": "UBSAN_OPTIONS",
+                    "value": "verbosity=1:log_threads=1:abort_on_error=1:sleep_before_dying=3"
+                }
+            ],
+            "externalConsole": false,
+            // "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
