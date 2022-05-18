@@ -21,6 +21,10 @@
 #include "av1/common/cdef_block.h"
 #include "av1/common/reconinter.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 static int is_8x8_block_skip(MB_MODE_INFO **grid, int mi_row, int mi_col,
                              int mi_stride) {
   MB_MODE_INFO **mbmi = grid + mi_row * mi_stride + mi_col;
@@ -323,7 +327,13 @@ static void cdef_fb_col(const AV1_COMMON *const cm, const MACROBLOCKD *const xd,
       return;
     }
     cdef_prepare_fb(cm, fb_info, colbuf, cdef_left, fbc, fbr, plane);
+#if CONFIG_HW
+    hw_filter_stat_cdef_update_diff_pos_64(fbc, fbr);
+#endif
     cdef_filter_fb(fb_info, plane, cm->seq_params->use_highbitdepth);
+#if CONFIG_HW
+    hw_filter_stat_cdef_update_dir(fbc, fbr, (int32_t *)&fb_info->dir);
+#endif
   }
   *cdef_left = 1;
 }

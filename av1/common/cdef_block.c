@@ -17,6 +17,10 @@
 
 #include "av1/common/cdef.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 /* Generated from gen_filter_tables.c. */
 DECLARE_ALIGNED(16, const int, cdef_directions[8][2]) = {
   { -1 * CDEF_BSTRIDE + 1, -2 * CDEF_BSTRIDE + 2 },
@@ -64,6 +68,11 @@ int cdef_find_dir_c(const uint16_t *img, int stride, int32_t *var,
       partial[7][i / 2 + j] += x;
     }
   }
+
+#if CONFIG_HW
+  hw_filter_stat_cdef_update_diff((int32_t *)&partial);
+#endif
+
   for (i = 0; i < 8; i++) {
     cost[2] += partial[2][i] * partial[2][i];
     cost[6] += partial[6][i] * partial[6][i];
@@ -210,6 +219,9 @@ void av1_cdef_filter_fb(uint8_t *dst8, uint16_t *dst16, int dstride,
       for (bi = 0; bi < cdef_count; bi++) {
         by = dlist[bi].by;
         bx = dlist[bi].bx;
+#if CONFIG_HW
+        hw_filter_stat_cdef_update_diff_pos_8(bx, by);
+#endif
         dir[by][bx] = cdef_find_dir(&in[8 * by * CDEF_BSTRIDE + 8 * bx],
                                     CDEF_BSTRIDE, &var[by][bx], coeff_shift);
       }

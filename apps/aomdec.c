@@ -46,6 +46,10 @@
 #include "third_party/libyuv/include/libyuv/scale.h"
 #endif
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 static const char *exec_name;
 
 struct AvxDecInputContext {
@@ -493,7 +497,9 @@ static int main_loop(int argc, const char **argv_) {
   /* Parse command line */
   exec_name = argv_[0];
   argv = argv_dup(argc - 1, argv_ + 1);
-
+#if CONFIG_HW
+  hw_global_init();
+#endif
   aom_codec_iface_t *interface = NULL;
   for (argi = argj = argv; (*argj = *argi); argi += arg.argv_step) {
     memset(&arg, 0, sizeof(arg));
@@ -596,6 +602,9 @@ static int main_loop(int argc, const char **argv_) {
     usage_exit();
   } else {
     fprintf(stdout, "input file: %s\n", fn);
+#if CONFIG_HW
+    hw_global_set_input_fn(fn);
+#endif
   }
   /* Open file */
   infile = strcmp(fn, "-") ? fopen(fn, "rb") : set_binary_mode(stdin);
@@ -606,8 +615,16 @@ static int main_loop(int argc, const char **argv_) {
 #if CONFIG_OS_SUPPORT
   /* Make sure we don't dump to the terminal, unless forced to with -o - */
   if (outfile_pattern == NULL && !do_md5 && !noblit) {
-    out_fn = (char *)malloc((strlen(fn) + 5) * sizeof(char));
-    strcpy(out_fn, fn);
+    char *pfnc = fn;
+    for (char *pCur = fn; *pCur != '\0'; pCur++) {
+      if (*pCur == '/') pfnc = pCur + 1;
+    }
+    char cwd[PATH_MAX] = { 0 };
+    assert(getcwd(cwd, sizeof(cwd)) != NULL);
+    out_fn = calloc(strlen(pfnc) + strlen(cwd) + 15 + 1, sizeof(char));
+    strcat(out_fn, cwd);
+    strcat(out_fn, "/test_data/");
+    strcat(out_fn, pfnc);
     strcat(out_fn, ".y4m");
     outfile_pattern = out_fn;
     // fprintf(stderr,
@@ -1025,6 +1042,11 @@ fail2:
   free(argv);
 
   if (out_fn != NULL) free(out_fn);
+
+#if CONFIG_HW
+  hw_global_frame_done();
+  hw_global_destroy();
+#endif
 
   return ret;
 }

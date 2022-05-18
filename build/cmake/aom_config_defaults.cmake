@@ -94,6 +94,7 @@ set_aom_config_var(CONFIG_AV1_HIGHBITDEPTH 1
                    "Build with high bitdepth support.")
 set_aom_config_var(CONFIG_AV1_TEMPORAL_DENOISING 0
                    "Build with temporal denoising support.")
+set_aom_config_var(CONFIG_HW 1 "Enable hardware supprot.")
 
 # Debugging flags.
 set_aom_config_var(CONFIG_DEBUG 0 "Enable debug-only code.")

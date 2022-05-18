@@ -25,6 +25,10 @@
 #include "av1/decoder/decodeframe.h"
 #include "av1/decoder/obu.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 aom_codec_err_t aom_get_num_layers_from_operating_point_idc(
     int operating_point_idc, unsigned int *number_spatial_layers,
     unsigned int *number_temporal_layers) {
@@ -944,6 +948,10 @@ int aom_decode_frame_from_obus(struct AV1Decoder *pbi, const uint8_t *data,
           pbi->error.error_code = AOM_CODEC_CORRUPT_FRAME;
           return -1;
         }
+
+// #if CONFIG_HW
+//         hw_global_frame_start();
+// #endif
         break;
       case OBU_FRAME_HEADER:
       case OBU_REDUNDANT_FRAME_HEADER:
@@ -981,6 +989,12 @@ int aom_decode_frame_from_obus(struct AV1Decoder *pbi, const uint8_t *data,
           rb.bit_offset = 8 * frame_header_size;
         }
 
+#if CONFIG_HW
+        hw_global_set_frame_params(cm->width, cm->height);
+        hw_global_set_mi_params(cm->mi_params.mi_rows, cm->mi_params.mi_cols);
+        // hw_filter_stat_lr_set_num_units(cm->rst_info[0]->restoration_unit_size);
+        hw_global_frame_next();
+#endif
         decoded_payload_size = frame_header_size;
         pbi->frame_header_size = frame_header_size;
         cm->cur_frame->temporal_id = obu_header.temporal_layer_id;
@@ -1006,6 +1020,12 @@ int aom_decode_frame_from_obus(struct AV1Decoder *pbi, const uint8_t *data,
           *p_data_end = data_end;
           break;
         }
+
+#if CONFIG_HW
+        hw_filter_stat_cdef_update_seq(cm->seq_params->enable_cdef);
+        hw_filter_stat_up_update_seq(cm->seq_params->enable_superres);
+        hw_filter_stat_fgs_update_seq(cm->seq_params->film_grain_params_present);
+#endif
 
         if (obu_header.type != OBU_FRAME) break;
         obu_payload_offset = frame_header_size;

@@ -36,6 +36,10 @@
 #include "av1/decoder/detokenize.h"
 #include "av1/decoder/obu.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 static void initialize_dec(void) {
   av1_rtcd();
   aom_dsp_rtcd();

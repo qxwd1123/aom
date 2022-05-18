@@ -23,6 +23,10 @@
 #include "av1/common/cfl.h"
 #include "av1/common/reconintra.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 enum {
   NEED_LEFT = 1 << 1,
   NEED_ABOVE = 1 << 2,
@@ -1667,6 +1671,11 @@ void av1_predict_intra_block_facade(const AV1_COMMON *cm, MACROBLOCKD *xd,
           : FILTER_INTRA_MODES;
   const int angle_delta = mbmi->angle_delta[plane != AOM_PLANE_Y] * ANGLE_STEP;
   const SequenceHeader *seq_params = cm->seq_params;
+
+#if CONFIG_HW
+  if (plane == AOM_PLANE_Y)
+    hw_filter_stat_cdef_dir_intra(xd->mi_col, xd->mi_row, mbmi->bsize, mode);
+#endif
 
   if (plane != AOM_PLANE_Y && mbmi->uv_mode == UV_CFL_PRED) {
 #if CONFIG_DEBUG

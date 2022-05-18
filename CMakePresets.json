@@ -13,6 +13,7 @@
                 "CONFIG_AV1_DECODER": "1",
                 "CONFIG_MULTITHREAD": "0",
                 "AOM_TARGET_CPU": "generic",
+                "CONFIG_HW": "1",
                 "ENABLE_CCACHE": "1",
                 "SANITIZE": "address,undefined",
                 "ENABLE_DOCS": "0"

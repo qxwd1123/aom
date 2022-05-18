@@ -33,6 +33,10 @@
 #include "aom_util/debug_util.h"
 #endif  // CONFIG_BITSTREAM_DEBUG || CONFIG_MISMATCH_DEBUG
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 #include "av1/common/alloccommon.h"
 #include "av1/common/cdef.h"
 #include "av1/common/cfl.h"
@@ -1686,6 +1690,10 @@ static AOM_INLINE void loop_restoration_read_sb_coeffs(
       rui->restoration_type = RESTORE_NONE;
     }
   }
+#if CONFIG_HW
+  if (plane == 0)
+    hw_filter_stat_lr_update_block(runit_idx, rui->restoration_type);
+#endif
 }
 #endif  // !CONFIG_REALTIME_ONLY
 
@@ -5310,6 +5318,15 @@ void av1_decode_tg_tiles_and_wrapup(AV1Decoder *pbi, const uint8_t *data,
       }
     }
 #endif  // !CONFIG_REALTIME_ONLY
+
+#if CONFIG_HW
+    hw_filter_stat_lf_update_frame(cm->lf.filter_level[0],
+                                   cm->lf.filter_level[1]);
+    hw_filter_stat_cdef_update_block(&(cm->mi_params));
+    hw_filter_stat_up_update_frame(cm->superres_scale_denominator != 8);
+    hw_filter_stat_lr_update_frame(do_loop_restoration);
+    hw_filter_stat_fgs_update_frame(cm->film_grain_params.apply_grain);
+#endif
   }
 
   if (!pbi->dcb.corrupted) {

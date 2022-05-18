@@ -22,6 +22,10 @@
 #include "av1/common/reconinter.h"
 #include "av1/common/seg_common.h"
 
+#if CONFIG_HW
+#include "hardware/hw.h"
+#endif
+
 static const SEG_LVL_FEATURES seg_lvl_lf_lut[MAX_MB_PLANE][2] = {
   { SEG_LVL_ALT_LF_Y_V, SEG_LVL_ALT_LF_Y_H },
   { SEG_LVL_ALT_LF_U, SEG_LVL_ALT_LF_U },
@@ -378,6 +382,9 @@ void av1_filter_block_plane_vert(const AV1_COMMON *const cm,
         params.filter_length = 0;
         tx_size = TX_4X4;
       }
+#if CONFIG_HW
+      hw_filter_stat_lf_update_block(0, params.filter_length, curr_x, curr_y);
+#endif
 
 #if CONFIG_AV1_HIGHBITDEPTH
       const int use_highbitdepth = cm->seq_params->use_highbitdepth;
@@ -575,6 +582,10 @@ void av1_filter_block_plane_horz(const AV1_COMMON *const cm,
         params.filter_length = 0;
         tx_size = TX_4X4;
       }
+
+#if CONFIG_HW
+      hw_filter_stat_lf_update_block(1, params.filter_length, curr_x, curr_y);
+#endif
 
 #if CONFIG_AV1_HIGHBITDEPTH
       const int use_highbitdepth = cm->seq_params->use_highbitdepth;
