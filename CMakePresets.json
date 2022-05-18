@@ -1,0 +1,91 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Config",
+            "description": "Default build",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_dir",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CONFIG_AV1_ENCODER": "0",
+                "CONFIG_AV1_DECODER": "1",
+                "CONFIG_MULTITHREAD": "0",
+                "AOM_TARGET_CPU": "generic",
+                "CONFIG_WEBM_IO": "1",
+                "CONFIG_LIBYUV": "1",
+                "CONFIG_ACCOUNTING": "1",
+                "CONFIG_INSPECTION": "1",
+                "ENABLE_CCACHE": "1",
+                "ENABLE_TESTS": "0",
+                "ENABLE_DOCS": "0",
+                "SANITIZE": "address",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "warnings": {
+                "dev": true,
+                "deprecated": true
+            },
+            "errors": {
+                "dev": true,
+                "deprecated": true
+            }
+        },
+        {
+            "name": "inspect",
+            "displayName": "inspect Config",
+            "description": "inspect build",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_dir_inspect",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CONFIG_AV1_ENCODER": "0",
+                "CONFIG_AV1_DECODER": "1",
+                "CONFIG_MULTITHREAD": "0",
+                "CONFIG_RUNTIME_CPU_DETECT": "0",
+                "AOM_TARGET_CPU": "generic",
+                "CONFIG_WEBM_IO": "1",
+                "CONFIG_LIBYUV": "1",
+                "CONFIG_ACCOUNTING": "1",
+                "CONFIG_INSPECTION": "1",
+                "ENABLE_CCACHE": "1",
+                "ENABLE_TESTS": "0",
+                "ENABLE_DOCS": "0",
+                "CMAKE_TOOLCHAIN_FILE": "/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+            },
+            "warnings": {
+                "dev": true,
+                "deprecated": true
+            },
+            "errors": {
+                "dev": true,
+                "deprecated": true
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        },
+        {
+            "name": "inspect",
+            "configurePreset": "inspect"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
+    ]
+}

@@ -421,31 +421,31 @@ if(CONFIG_AV1_DECODER AND ENABLE_EXAMPLES)
   endif()
 
   if(CONFIG_INSPECTION)
-    add_executable(inspect "${AOM_ROOT}/examples/inspect.c"
+    add_executable(inspect_av1 "${AOM_ROOT}/examples/inspect.c"
                            $<TARGET_OBJECTS:aom_common_app_util>
                            $<TARGET_OBJECTS:aom_decoder_app_util>)
-    list(APPEND AOM_DECODER_EXAMPLE_TARGETS inspect)
+    list(APPEND AOM_DECODER_EXAMPLE_TARGETS inspect_av1)
 
     if(EMSCRIPTEN)
       add_preproc_definition(_POSIX_SOURCE)
-      append_link_flag_to_target("inspect" "--emrun")
-      append_link_flag_to_target("inspect" "-s USE_PTHREADS=0")
-      append_link_flag_to_target("inspect" "-s WASM=1")
-      append_link_flag_to_target("inspect" "-s MODULARIZE=1")
-      append_link_flag_to_target("inspect" "-s ALLOW_MEMORY_GROWTH=1")
+      append_link_flag_to_target("inspect_av1" "--emrun")
+      append_link_flag_to_target("inspect_av1" "-s USE_PTHREADS=0")
+      append_link_flag_to_target("inspect_av1" "-s WASM=1")
+      append_link_flag_to_target("inspect_av1" "-s MODULARIZE=1")
+      append_link_flag_to_target("inspect_av1" "-s ALLOW_MEMORY_GROWTH=1")
       append_link_flag_to_target(
-        "inspect" "-s \'EXPORTED_RUNTIME_METHODS=[\"FS\", \"UTF8ToString\"]\'")
-      append_link_flag_to_target("inspect"
+        "inspect_av1" "-s \'EXPORTED_RUNTIME_METHODS=[\"FS\", \"UTF8ToString\"]\'")
+      append_link_flag_to_target("inspect_av1"
                                  "-s EXPORT_NAME=\"\'DecoderModule\'\"")
-      append_link_flag_to_target("inspect" "--memory-init-file 0")
+      append_link_flag_to_target("inspect_av1" "--memory-init-file 0")
 
-      if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+      # if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
-        # Default to -O3 when no build type is specified.
-        append_compiler_flag("-O3")
-      endif()
+      #   # Default to -O3 when no build type is specified.
+      #   append_compiler_flag("-O3")
+      # endif()
 
-      em_link_post_js(inspect "${AOM_ROOT}/tools/inspect-post.js")
+      em_link_post_js(inspect_av1 "${AOM_ROOT}/tools/inspect-post.js")
     endif()
   endif()
 
