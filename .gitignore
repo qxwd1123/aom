@@ -1,8 +1,12 @@
 tags
-cmbuild
+cmbuild*
 .cproject
 .idea
 .project
 .vscode
 .gitignore
 TAGS
+build_dir*
+stream*
+out*
+stat*
