@@ -1,7 +1,9 @@
 tags
-cmbuild
+cmbuild*
 .cproject
 .project
 .vscode
 .gitignore
 TAGS
+test_data*
+filter_stat
