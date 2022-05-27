@@ -776,6 +776,7 @@ const uint8_t *av1_get_obmc_mask(int length) {
   }
 }
 
+__attribute__((no_sanitize("undefined")))
 static INLINE void increment_int_ptr(MACROBLOCKD *xd, int rel_mi_row,
                                      int rel_mi_col, uint8_t op_mi_size,
                                      int dir, MB_MODE_INFO *mi, void *fun_ctxt,
