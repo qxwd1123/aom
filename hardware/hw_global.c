@@ -26,16 +26,14 @@ void hw_global_destroy() {
 void hw_global_set_input_fn(char *input_fn) {
   hw_global->input_fn = malloc(strlen(input_fn) + 1);
   memcpy(hw_global->input_fn, input_fn, strlen(input_fn) + 1);
-  char * pfnc = input_fn;
-  for(char * pCur = input_fn; *pCur != '\0'; pCur++)
-  {
-      if(*pCur == '/')
-          pfnc = pCur + 1;
+  char *pfnc = input_fn;
+  for (char *pCur = input_fn; *pCur != '\0'; pCur++) {
+    if (*pCur == '/') pfnc = pCur + 1;
   }
-  char cwd[PATH_MAX] = {0};
-  assertf(getcwd(cwd, sizeof(cwd)) != NULL)
-    fprintf(stderr, "getcwd failed\n");
-  hw_global->output_fn = calloc(strlen(pfnc) + strlen(cwd) + 13 + 1, sizeof(char));
+  char cwd[PATH_MAX] = { 0 };
+  assertf(getcwd(cwd, sizeof(cwd)) != NULL) fprintf(stderr, "getcwd failed\n");
+  hw_global->output_fn =
+      calloc(strlen(pfnc) + strlen(cwd) + 13 + 1, sizeof(char));
   strcat(hw_global->output_fn, cwd);
   strcat(hw_global->output_fn, "/filter_stat/");
   strcat(hw_global->output_fn, pfnc);
@@ -51,7 +49,8 @@ void hw_global_set_mi_params(int32_t mi_rows, int32_t mi_cols) {
   hw_global->hw_common->mi_rows = mi_rows;
   hw_global->hw_common->fb_cols = (mi_cols + MI_SIZE_64X64 - 1) / MI_SIZE_64X64;
   hw_global->hw_common->fb_rows = (mi_rows + MI_SIZE_64X64 - 1) / MI_SIZE_64X64;
-  hw_global->hw_common->fb_num = hw_global->hw_common->fb_cols * hw_global->hw_common->fb_rows;
+  hw_global->hw_common->fb_num =
+      hw_global->hw_common->fb_cols * hw_global->hw_common->fb_rows;
 }
 
 void hw_global_frame_start() {

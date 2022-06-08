@@ -96,8 +96,7 @@ void av1_alloc_restoration_struct(AV1_COMMON *cm, RestorationInfo *rsi,
   const int ntiles = 1;
   const int nunits = ntiles * rsi->units_per_tile;
 #if CONFIG_HW
-  if(!is_uv)
-    hw_filter_stat_lr_set_num_units(nunits);
+  if (!is_uv) hw_filter_stat_lr_set_num_units(nunits);
 #endif
   aom_free(rsi->unit_info);
   CHECK_MEM_ERROR(cm, rsi->unit_info,

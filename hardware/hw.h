@@ -16,7 +16,7 @@ void hw_global_frame_done();
 
 void hw_filter_stat_lf_update_frame();
 void hw_filter_stat_cdef_update_seq(int8_t enable_cdef);
-void hw_filter_stat_cdef_update_block(CommonModeInfoParams *mi_params);
+void hw_filter_stat_cdef_update_block(AV1_COMMON *cm);
 void hw_filter_stat_cdef_update_dir(int32_t fbc, int32_t fbr, int32_t *dir);
 void hw_filter_stat_cdef_update_diff_pos_64(int32_t fbc, int32_t fbr);
 void hw_filter_stat_cdef_update_diff_pos_8(int32_t bx, int32_t by);

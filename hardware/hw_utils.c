@@ -110,8 +110,9 @@ void *hw_deque_end(const hw_deque_t *deque) {
 
 void *hw_deque_iter_inc(hw_deque_t *deque, void *ptr) {
   int8_t *p_data = deque->data;
-  assertf(ptr >= (void*)p_data && ptr <= (void*)(p_data + deque->size * deque->item_size))
-    fprintf(stderr, "ptr is not belong to deque\n");
+  assertf(ptr >= (void *)p_data &&
+          ptr <= (void *)(p_data + deque->size * deque->item_size))
+      fprintf(stderr, "ptr is not belong to deque\n");
   int index = ((int8_t *)ptr - p_data) / deque->item_size;
   index = (index + 1) % deque->size;
   return p_data + index * deque->item_size;
@@ -119,8 +120,9 @@ void *hw_deque_iter_inc(hw_deque_t *deque, void *ptr) {
 
 void *hw_deque_iter_dec(hw_deque_t *deque, void *ptr) {
   int8_t *p_data = deque->data;
-  assertf(ptr >= (void*)p_data && ptr <= (void*)(p_data + deque->size * deque->item_size))
-    fprintf(stderr, "ptr is not belong to deque\n");
+  assertf(ptr >= (void *)p_data &&
+          ptr <= (void *)(p_data + deque->size * deque->item_size))
+      fprintf(stderr, "ptr is not belong to deque\n");
   int index = ((int8_t *)ptr - p_data) / deque->item_size;
   index = (index + deque->size - 1) % deque->size;
   return p_data + index * deque->item_size;
@@ -132,8 +134,7 @@ void hw_deque_clear(hw_deque_t *deque) {
 }
 
 hw_res_e hw_deque_push_front(hw_deque_t *deque, const void *data) {
-  assertf(data != NULL)
-    fprintf(stderr, "data to push is NULL\n");
+  assertf(data != NULL) fprintf(stderr, "data to push is NULL\n");
   int8_t *p_data = deque->data;
 
   if (hw_deque_full(deque)) {
@@ -148,8 +149,7 @@ hw_res_e hw_deque_push_front(hw_deque_t *deque, const void *data) {
 }
 
 hw_res_e hw_deque_push_back(hw_deque_t *deque, const void *data) {
-  assertf(data != NULL)
-    fprintf(stderr, "data to push is NULL\n");
+  assertf(data != NULL) fprintf(stderr, "data to push is NULL\n");
   int8_t *p_data = deque->data;
 
   if (hw_deque_full(deque)) {
@@ -164,8 +164,7 @@ hw_res_e hw_deque_push_back(hw_deque_t *deque, const void *data) {
 }
 
 hw_res_e hw_deque_pop_front(hw_deque_t *deque, void *data) {
-  assertf(data != NULL)
-    fprintf(stderr, "data to push is NULL\n");
+  assertf(data != NULL) fprintf(stderr, "data to push is NULL\n");
   int8_t *p_data = deque->data;
 
   if (hw_deque_empty(deque)) {
@@ -180,8 +179,7 @@ hw_res_e hw_deque_pop_front(hw_deque_t *deque, void *data) {
 }
 
 hw_res_e hw_deque_pop_back(hw_deque_t *deque, void *data) {
-  assertf(data != NULL)
-    fprintf(stderr, "data to push is NULL\n");
+  assertf(data != NULL) fprintf(stderr, "data to push is NULL\n");
   int8_t *p_data = deque->data;
 
   if (hw_deque_empty(deque)) {

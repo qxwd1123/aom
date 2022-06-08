@@ -949,9 +949,9 @@ int aom_decode_frame_from_obus(struct AV1Decoder *pbi, const uint8_t *data,
           return -1;
         }
 
-// #if CONFIG_HW
-//         hw_global_frame_start();
-// #endif
+        // #if CONFIG_HW
+        //         hw_global_frame_start();
+        // #endif
         break;
       case OBU_FRAME_HEADER:
       case OBU_REDUNDANT_FRAME_HEADER:
@@ -1024,7 +1024,8 @@ int aom_decode_frame_from_obus(struct AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_HW
         hw_filter_stat_cdef_update_seq(cm->seq_params->enable_cdef);
         hw_filter_stat_up_update_seq(cm->seq_params->enable_superres);
-        hw_filter_stat_fgs_update_seq(cm->seq_params->film_grain_params_present);
+        hw_filter_stat_fgs_update_seq(
+            cm->seq_params->film_grain_params_present);
 #endif
 
         if (obu_header.type != OBU_FRAME) break;
