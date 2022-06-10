@@ -20,7 +20,6 @@ if [[ ! -a aomdec ]]; then
     -DCONFIG_HW=1 \
     -DENABLE_CCACHE=1 \
     -DSANITIZE=address,undefined \
-    -DENABLE_DOCS=0 \
-    -DFORCE_HIGHBITDEPTH_DECODING=1
+    -DENABLE_DOCS=0
 fi
 cmake --build ./

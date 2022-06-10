@@ -49,8 +49,6 @@ const char *colorspace8(aom_chroma_sample_position_t csp, aom_img_fmt_t fmt) {
 static const char *colorspace(unsigned int bit_depth,
                               aom_chroma_sample_position_t csp,
                               aom_img_fmt_t fmt) {
-  if (bit_depth == 8 && fmt & AOM_IMG_FMT_HIGHBITDEPTH)
-    fmt ^= AOM_IMG_FMT_HIGHBITDEPTH;
   switch (bit_depth) {
     case 8: return colorspace8(csp, fmt);
     case 9:

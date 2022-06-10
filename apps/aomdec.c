@@ -872,17 +872,16 @@ static int main_loop(int argc, const char **argv_) {
 #endif
           }
         }
-        // // Default to codec bit depth if output bit depth not set
-        // unsigned int output_bit_depth;
-        // if (!fixed_output_bit_depth && single_file) {
-        //   output_bit_depth = img->bit_depth;
-        // } else {
-        //   output_bit_depth = fixed_output_bit_depth;
-        // }
-        // // Shift up or down if necessary
-        // if (output_bit_depth != 0)
-        //   aom_shift_img(output_bit_depth, &img, &img_shifted);
-        (void)fixed_output_bit_depth;
+        // Default to codec bit depth if output bit depth not set
+        unsigned int output_bit_depth;
+        if (!fixed_output_bit_depth && single_file) {
+          output_bit_depth = img->bit_depth;
+        } else {
+          output_bit_depth = fixed_output_bit_depth;
+        }
+        // Shift up or down if necessary
+        if (output_bit_depth != 0)
+          aom_shift_img(output_bit_depth, &img, &img_shifted);
 
         aom_input_ctx.width = img->d_w;
         aom_input_ctx.height = img->d_h;
