@@ -16,7 +16,6 @@ var Module = {
   postRun: [function () {
     printErr(`Loaded Javascript Decoder OK`);
   }],
-  memoryInitializerPrefixURL: "bin/",
   arguments: ['input.ivf', 'output.raw'],
   on_frame_decoded_json: function (jsonString) {
     let json = JSON.parse("[" + Module.UTF8ToString(jsonString) + "null]");
@@ -27,6 +26,12 @@ var Module = {
     });
   }
 };
+Module['locateFile'] = function(path, prefix) {
+   // if it's a mem init file, use a custom dir
+   if (path.endsWith(".mem")) return "bin/" + path;
+   // otherwise, use the default, the prefix (JS file's dir) + the path
+   return prefix + path;
+}
 DecoderModule(Module);
 Module.FS.writeFile("/tmp/input.ivf", buffer, { encoding: "binary" });
 Module._open_file();

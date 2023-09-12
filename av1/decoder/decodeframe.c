@@ -2787,11 +2787,11 @@ static const uint8_t *decode_tiles(AV1Decoder *pbi, const uint8_t *data,
     CHECK_MEM_ERROR(cm, pbi->dcb.xd.seg_mask,
                     (uint8_t *)aom_memalign(
                         16, 2 * MAX_SB_SQUARE * sizeof(*pbi->dcb.xd.seg_mask)));
-#if CONFIG_ACCOUNTING
-  if (pbi->acct_enabled) {
-    aom_accounting_reset(&pbi->accounting);
-  }
-#endif
+  // #if CONFIG_ACCOUNTING
+  //   if (pbi->acct_enabled) {
+  //     aom_accounting_reset(&pbi->accounting);
+  //   }
+  // #endif
 
   set_decode_func_pointers(&pbi->td, 0x3);
 
@@ -5349,6 +5349,14 @@ void av1_decode_tg_tiles_and_wrapup(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_INSPECTION
   if (pbi->inspect_cb != NULL) {
     (*pbi->inspect_cb)(pbi, pbi->inspect_ctx);
+  }
+#endif
+
+#if CONFIG_ACCOUNTING
+  // If accounting is enabled, reset the counters here ready for the
+  // next frame.
+  if (pbi->acct_enabled) {
+    aom_accounting_reset(&pbi->accounting);
   }
 #endif
 

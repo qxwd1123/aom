@@ -41,7 +41,8 @@ void ifd_clear(insp_frame_data *fd) {
 
 /* TODO(negge) This function may be called by more than one thread when using
                a multi-threaded decoder and this may cause a data race. */
-int ifd_inspect(insp_frame_data *fd, void *decoder, int skip_not_transform) {
+int ifd_inspect(insp_frame_data *fd, AvxVideoInfo *info, void *decoder,
+                int skip_not_transform) {
   struct AV1Decoder *pbi = (struct AV1Decoder *)decoder;
   AV1_COMMON *const cm = &pbi->common;
   const CommonModeInfoParams *const mi_params = &cm->mi_params;
@@ -49,21 +50,38 @@ int ifd_inspect(insp_frame_data *fd, void *decoder, int skip_not_transform) {
 
   if (fd->mi_rows != mi_params->mi_rows || fd->mi_cols != mi_params->mi_cols) {
     ifd_clear(fd);
-    ifd_init_mi_rc(fd, mi_params->mi_rows, mi_params->mi_cols);
+    ifd_init_mi_rc(fd, mi_params->mi_cols, mi_params->mi_rows);
   }
   fd->show_existing_frame = cm->show_existing_frame;
   fd->frame_number = cm->current_frame.frame_number;
   fd->show_frame = cm->show_frame;
   fd->frame_type = cm->current_frame.frame_type;
   fd->base_qindex = quant_params->base_qindex;
+  fd->superres_scale_denominator = cm->superres_scale_denominator;
+  info->frame_width = cm->render_width;
+  info->frame_height = cm->render_height;
   // Set width and height of the first tile until generic support can be added
-  TileInfo tile_info;
-  av1_tile_set_row(&tile_info, cm, 0);
-  av1_tile_set_col(&tile_info, cm, 0);
-  fd->tile_mi_cols = tile_info.mi_col_end - tile_info.mi_col_start;
-  fd->tile_mi_rows = tile_info.mi_row_end - tile_info.mi_row_start;
+  {
+    TileInfo tile_info;
+    av1_tile_set_row(&tile_info, cm, 0);
+    av1_tile_set_col(&tile_info, cm, 0);
+    fd->tile_num = cm->tiles.cols * cm->tiles.rows;
+    int i = 0;
+    for (int r = 0; r < cm->tiles.rows; r++) {
+      for (int c = 0; c < cm->tiles.cols; c++) {
+        av1_tile_set_row(&tile_info, cm, r);
+        av1_tile_set_col(&tile_info, cm, c);
+        fd->tiles[i] = tile_info.mi_col_start;
+        fd->tiles[i + 1] = tile_info.mi_col_end;
+        fd->tiles[i + 2] = tile_info.mi_row_start;
+        fd->tiles[i + 3] = tile_info.mi_row_end;
+        i += 4;
+      }
+    }
+  }
   fd->delta_q_present_flag = cm->delta_q_info.delta_q_present_flag;
   fd->delta_q_res = cm->delta_q_info.delta_q_res;
+  fd->sb_size = block_size_wide[cm->seq_params->sb_size];
 #if CONFIG_ACCOUNTING
   fd->accounting = &pbi->accounting;
 #endif

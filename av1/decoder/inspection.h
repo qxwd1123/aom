@@ -19,6 +19,7 @@ extern "C" {
 #if CONFIG_ACCOUNTING
 #include "av1/decoder/accounting.h"
 #endif
+#include "common/video_common.h"
 
 #ifndef AOM_AOM_AOMDX_H_
 typedef void (*aom_inspect_cb)(void *decoder, void *data);
@@ -68,10 +69,12 @@ struct insp_frame_data {
   int show_frame;
   int frame_type;
   int base_qindex;
+  int sb_size;
   int mi_rows;
   int mi_cols;
-  int tile_mi_rows;
-  int tile_mi_cols;
+  int tile_num;
+  int tiles[8192];
+  uint8_t superres_scale_denominator;
   int16_t y_dequant[MAX_SEGMENTS][2];
   int16_t u_dequant[MAX_SEGMENTS][2];
   int16_t v_dequant[MAX_SEGMENTS][2];
@@ -83,7 +86,8 @@ struct insp_frame_data {
 
 void ifd_init(insp_frame_data *fd, int frame_width, int frame_height);
 void ifd_clear(insp_frame_data *fd);
-int ifd_inspect(insp_frame_data *fd, void *decoder, int skip_not_transform);
+int ifd_inspect(insp_frame_data *fd, AvxVideoInfo *info, void *decoder,
+                int skip_not_transform);
 
 #ifdef __cplusplus
 }  // extern "C"

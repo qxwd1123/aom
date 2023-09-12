@@ -40,6 +40,10 @@
 #include "common/tools_common.h"
 #include "common/video_common.h"
 #include "common/video_reader.h"
+#include "common/ivfdec.h"
+#include "common/obudec.h"
+#include "common/webmdec.h"
+#include "aom_ports/mem_ops.h"
 
 // Max JSON buffer size.
 const int MAX_BUFFER = 1024 * 1024 * 256;
@@ -258,8 +262,6 @@ const map_entry palette_map[] = {
   { "SEVEN_COLORS", 7 }, { "EIGHT_COLORS", 8 }, LAST_ENUM
 };
 
-const map_entry config_map[] = { ENUM(MI_SIZE), LAST_ENUM };
-
 static const char *exec_name;
 
 struct parm_offset {
@@ -303,8 +305,7 @@ insp_frame_data frame_data;
 int frame_count = 0;
 int decoded_frame_count = 0;
 aom_codec_ctx_t codec;
-AvxVideoReader *reader = NULL;
-const AvxVideoInfo *info = NULL;
+AvxVideoInfo info = { 0 };
 aom_image_t *img = NULL;
 
 void on_frame_decoded_dump(char *json) {
@@ -612,7 +613,7 @@ int skip_non_transform = 0;
 
 void inspect(void *pbi, void *data) {
   /* Fetch frame data. */
-  ifd_inspect(&frame_data, pbi, skip_non_transform);
+  ifd_inspect(&frame_data, &info, pbi, skip_non_transform);
 
   // Show existing frames just show a reference buffer we've already decoded.
   // There's no information to show.
@@ -721,15 +722,29 @@ void inspect(void *pbi, void *data) {
                   frame_data.frame_type);
   buf += snprintf(buf, MAX_BUFFER, "  \"baseQIndex\": %d,\n",
                   frame_data.base_qindex);
-  buf += snprintf(buf, MAX_BUFFER, "  \"tileCols\": %d,\n",
-                  frame_data.tile_mi_cols);
-  buf += snprintf(buf, MAX_BUFFER, "  \"tileRows\": %d,\n",
-                  frame_data.tile_mi_rows);
+  buf += put_str(buf, "  \"tiles\": [");
+  if (frame_data.tile_num) {
+    for (int i = 0; i < frame_data.tile_num * 4; i += 4) {
+      buf += put_str(buf, "[");
+      buf += put_num(buf, 0, frame_data.tiles[i], ',');
+      buf += put_num(buf, 0, frame_data.tiles[i + 1], ',');
+      buf += put_num(buf, 0, frame_data.tiles[i + 2], ',');
+      buf += put_num(buf, 0, frame_data.tiles[i + 3], 0);
+      buf += put_str(buf, "]");
+      if (i != frame_data.tile_num * 4 - 4) *(buf++) = ',';
+    }
+  }
+  buf += put_str(buf, "],\n");
   buf += snprintf(buf, MAX_BUFFER, "  \"deltaQPresentFlag\": %d,\n",
                   frame_data.delta_q_present_flag);
   buf += snprintf(buf, MAX_BUFFER, "  \"deltaQRes\": %d,\n",
                   frame_data.delta_q_res);
   buf += put_str(buf, "  \"config\": {");
+  map_entry config_map[] = { ENUM(MI_SIZE),
+                             { "SB_SIZE", frame_data.sb_size },
+                             { "SUPERRES",
+                               frame_data.superres_scale_denominator },
+                             LAST_ENUM };
   buf += put_map(buf, config_map);
   buf += put_str(buf, "},\n");
   buf += put_str(buf, "  \"configString\": \"");
@@ -749,30 +764,180 @@ void ifd_init_cb() {
   aom_codec_control(&codec, AV1_SET_INSPECTION_CALLBACK, &ii);
 }
 
+struct AvxDecInputContext {
+  struct AvxInputContext *aom_input_ctx;
+  struct ObuDecInputContext *obu_ctx;
+  struct WebmInputContext *webm_ctx;
+};
+
+struct AvxDecInputContext input_ctx = { 0 };
+struct AvxInputContext aom_input_ctx = { 0 };
+#if CONFIG_WEBM_IO
+struct WebmInputContext webm_ctx = { 0 };
+#endif
+struct ObuDecInputContext obu_ctx = { 0 };
+
+static int file_is_raw(struct AvxInputContext *input) {
+  uint8_t buf[32];
+  int is_raw = 0;
+  aom_codec_stream_info_t si;
+  memset(&si, 0, sizeof(si));
+
+  if (fread(buf, 1, 32, input->file) == 32) {
+    int i;
+
+    if (mem_get_le32(buf) < 256 * 1024 * 1024) {
+      for (i = 0; i < get_aom_decoder_count(); ++i) {
+        aom_codec_iface_t *decoder = get_aom_decoder_by_index(i);
+        if (!aom_codec_peek_stream_info(decoder, buf + 4, 32 - 4, &si)) {
+          is_raw = 1;
+          input->fourcc = get_fourcc_by_aom_decoder(decoder);
+          input->width = si.w;
+          input->height = si.h;
+          input->framerate.numerator = 30;
+          input->framerate.denominator = 1;
+          break;
+        }
+      }
+    }
+  }
+
+  rewind(input->file);
+  return is_raw;
+}
+
+static int raw_read_frame(FILE *infile, uint8_t **buffer, size_t *bytes_read,
+                          size_t *buffer_size) {
+  char raw_hdr[RAW_FRAME_HDR_SZ];
+  size_t frame_size = 0;
+
+  if (fread(raw_hdr, RAW_FRAME_HDR_SZ, 1, infile) != 1) {
+    if (!feof(infile)) aom_tools_warn("Failed to read RAW frame size\n");
+  } else {
+    const size_t kCorruptFrameThreshold = 256 * 1024 * 1024;
+    const size_t kFrameTooSmallThreshold = 256 * 1024;
+    frame_size = mem_get_le32(raw_hdr);
+
+    if (frame_size > kCorruptFrameThreshold) {
+      aom_tools_warn("Read invalid frame size (%u)\n",
+                     (unsigned int)frame_size);
+      frame_size = 0;
+    }
+
+    if (frame_size < kFrameTooSmallThreshold) {
+      aom_tools_warn(
+          "Warning: Read invalid frame size (%u) - not a raw file?\n",
+          (unsigned int)frame_size);
+    }
+
+    if (frame_size > *buffer_size) {
+      uint8_t *new_buf = realloc(*buffer, 2 * frame_size);
+      if (new_buf) {
+        *buffer = new_buf;
+        *buffer_size = 2 * frame_size;
+      } else {
+        aom_tools_warn("Failed to allocate compressed data buffer\n");
+        frame_size = 0;
+      }
+    }
+  }
+
+  if (!feof(infile)) {
+    if (fread(*buffer, 1, frame_size, infile) != frame_size) {
+      aom_tools_warn("Failed to read full frame\n");
+      return 1;
+    }
+    *bytes_read = frame_size;
+  }
+
+  return 0;
+}
+
+static int _read_frame(struct AvxDecInputContext *input, uint8_t **buf,
+                       size_t *bytes_in_buffer, size_t *buffer_size) {
+  switch (input->aom_input_ctx->file_type) {
+#if CONFIG_WEBM_IO
+    case FILE_TYPE_WEBM:
+      return webm_read_frame(input->webm_ctx, buf, bytes_in_buffer,
+                             buffer_size);
+#endif
+    case FILE_TYPE_RAW:
+      return raw_read_frame(input->aom_input_ctx->file, buf, bytes_in_buffer,
+                            buffer_size);
+    case FILE_TYPE_IVF:
+      return ivf_read_frame(input->aom_input_ctx, buf, bytes_in_buffer,
+                            buffer_size, NULL);
+    case FILE_TYPE_OBU:
+      return obudec_read_temporal_unit(input->obu_ctx, buf, bytes_in_buffer,
+                                       buffer_size);
+    default: return 1;
+  }
+}
+
 EMSCRIPTEN_KEEPALIVE
 int open_file(char *file) {
   if (file == NULL) {
     // The JS analyzer puts the .ivf file at this location.
     file = "/tmp/input.ivf";
   }
-  reader = aom_video_reader_open(file);
-  if (!reader) die("Failed to open %s for reading.", file);
-  info = aom_video_reader_get_info(reader);
-  aom_codec_iface_t *decoder = get_aom_decoder_by_fourcc(info->codec_fourcc);
+  input_ctx.aom_input_ctx = &aom_input_ctx;
+  obu_ctx.avx_ctx = &aom_input_ctx;
+  input_ctx.obu_ctx = &obu_ctx;
+  input_ctx.webm_ctx = &webm_ctx;
+  input_ctx.obu_ctx = &obu_ctx;
+  FILE *infile = fopen(file, "rb");
+
+  input_ctx.aom_input_ctx->filename = file;
+  input_ctx.aom_input_ctx->file = infile;
+  if (file_is_ivf(input_ctx.aom_input_ctx))
+    input_ctx.aom_input_ctx->file_type = FILE_TYPE_IVF;
+#if CONFIG_WEBM_IO
+  else if (file_is_webm(input_ctx.webm_ctx, input_ctx.aom_input_ctx))
+    input_ctx.aom_input_ctx->file_type = FILE_TYPE_WEBM;
+#endif
+  else if (file_is_obu(&obu_ctx))
+    input_ctx.aom_input_ctx->file_type = FILE_TYPE_OBU;
+  else if (file_is_raw(input_ctx.aom_input_ctx))
+    input_ctx.aom_input_ctx->file_type = FILE_TYPE_RAW;
+  else {
+    fprintf(stderr, "Unrecognized input_ctx file type.\n");
+#if !CONFIG_WEBM_IO
+    fprintf(stderr, "aomdec was built without WebM container support.\n");
+#endif
+    return EXIT_FAILURE;
+  }
+
+#if CONFIG_WEBM_IO
+  if (aom_input_ctx.file_type == FILE_TYPE_WEBM) {
+    if (webm_guess_framerate(input_ctx.webm_ctx, input_ctx.aom_input_ctx)) {
+      fprintf(stderr,
+              "Failed to guess framerate -- error parsing "
+              "webm file?\n");
+      return EXIT_FAILURE;
+    }
+  }
+#endif
+
+  info.codec_fourcc = aom_input_ctx.fourcc;
+  info.time_base.denominator = aom_input_ctx.framerate.denominator;
+  info.time_base.numerator = aom_input_ctx.framerate.numerator;
+  info.frame_height = aom_input_ctx.height;
+  info.frame_width = aom_input_ctx.width;
+
+  aom_codec_iface_t *decoder = get_aom_decoder_by_fourcc(info.codec_fourcc);
   if (!decoder) die("Unknown input codec.");
-  fprintf(stderr, "Using %s\n", aom_codec_iface_name(decoder));
+  fprintf(stdout, "Using %s\n", aom_codec_iface_name(decoder));
   if (aom_codec_dec_init(&codec, decoder, NULL, 0))
     die("Failed to initialize decoder.");
-  ifd_init(&frame_data, info->frame_width, info->frame_height);
+  ifd_init(&frame_data, info.frame_width, info.frame_height);
   ifd_init_cb();
   return EXIT_SUCCESS;
 }
 
 Av1DecodeReturn adr;
-int have_frame = 0;
-const unsigned char *frame;
-const unsigned char *end_frame;
+unsigned char *frame;
 size_t frame_size = 0;
+size_t buffer_size = 0;
 
 EMSCRIPTEN_KEEPALIVE
 int read_frame() {
@@ -781,22 +946,12 @@ int read_frame() {
   // This loop skips over any frames that are show_existing_frames,  as
   // there is nothing to analyze.
   do {
-    if (!have_frame) {
-      if (!aom_video_reader_read_frame(reader)) return EXIT_FAILURE;
-      frame = aom_video_reader_get_frame(reader, &frame_size);
-
-      have_frame = 1;
-      end_frame = frame + frame_size;
-    }
-
+    if (_read_frame(&input_ctx, &frame, &frame_size, &buffer_size))
+      return EXIT_FAILURE;
     if (aom_codec_decode(&codec, frame, (unsigned int)frame_size, &adr) !=
         AOM_CODEC_OK) {
       die_codec(&codec, "Failed to decode frame.");
     }
-
-    frame = adr.buf;
-    frame_size = end_frame - frame;
-    if (frame == end_frame) have_frame = 0;
   } while (adr.show_existing);
 
   int got_any_frames = 0;
@@ -810,10 +965,22 @@ int read_frame() {
   if (ref_dec.idx == -1) {
     aom_codec_iter_t iter = NULL;
     img = frame_img = aom_codec_get_frame(&codec, &iter);
+    if (img->monochrome) {
+      memset(img->planes[1], 128 << (img->bit_depth - 8),
+             img->stride[1] * img->h >> img->y_chroma_shift);
+      memset(img->planes[2], 128 << (img->bit_depth - 8),
+             img->stride[2] * img->h >> img->y_chroma_shift);
+    }
     ++frame_count;
     got_any_frames = 1;
   } else if (!aom_codec_control(&codec, AV1_GET_REFERENCE, &ref_dec)) {
     img = frame_img = &ref_dec.img;
+    if (img->monochrome) {
+      memset(img->planes[1], 128 << (img->bit_depth - 8),
+             img->stride[1] * img->h >> img->y_chroma_shift);
+      memset(img->planes[2], 128 << (img->bit_depth - 8),
+             img->stride[2] * img->h >> img->y_chroma_shift);
+    }
     ++frame_count;
     got_any_frames = 1;
   }
@@ -848,10 +1015,10 @@ EMSCRIPTEN_KEEPALIVE
 int get_plane_height(int plane) { return aom_img_plane_height(img, plane); }
 
 EMSCRIPTEN_KEEPALIVE
-int get_frame_width() { return info->frame_width; }
+int get_frame_width() { return info.frame_width; }
 
 EMSCRIPTEN_KEEPALIVE
-int get_frame_height() { return info->frame_height; }
+int get_frame_height() { return info.frame_height; }
 
 static void parse_args(char **argv) {
   char **argi, **argj;
@@ -946,12 +1113,6 @@ int main(int argc, char **argv) {
   } else {
     usage_exit();
   }
-}
-
-EMSCRIPTEN_KEEPALIVE
-void quit() {
-  if (aom_codec_destroy(&codec)) die_codec(&codec, "Failed to destroy codec");
-  aom_video_reader_close(reader);
 }
 
 EMSCRIPTEN_KEEPALIVE
